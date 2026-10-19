@@ -80,32 +80,37 @@ class HandDetector:
         if not self.lmList or len(self.lmList) < 21:
             return [0, 0, 0, 0, 0]
 
-        fingers = []
+        wrist = self.lmList[0]
+        wx, wy = wrist[1], wrist[2]
+        import math
 
-        # Thumb - check horizontal projection relative to IP joint with margin
-        # Distinguish hand orientation roughly by comparing wrist (0) and pinky MCP (17)
-        is_right_palm = self.lmList[17][1] > self.lmList[5][1]
-        thumb_tip_x = self.lmList[self.tipIds[0]][1]
-        thumb_ip_x = self.lmList[self.tipIds[0] - 1][1]
-
-        if is_right_palm:
-            fingers.append(1 if thumb_tip_x > thumb_ip_x + 5 else 0)
-        else:
-            fingers.append(1 if thumb_tip_x < thumb_ip_x - 5 else 0)
+        # Thumb - distance to Pinky MCP (17) works in all hand angles and for both hands
+        pinky_mcp = self.lmList[17]
+        dist_thumb_tip = math.hypot(self.lmList[4][1] - pinky_mcp[1], self.lmList[4][2] - pinky_mcp[2])
+        dist_thumb_ip = math.hypot(self.lmList[3][1] - pinky_mcp[1], self.lmList[3][2] - pinky_mcp[2])
+        fingers.append(1 if dist_thumb_tip > dist_thumb_ip * 1.12 else 0)
 
         # 4 Fingers: Index, Middle, Ring, Pinky
-        # Add safety margin to prevent flickering when relaxed or angled
+        # Uses hybrid vertical + distance check so it works at shoulder level and when angled
         for id in range(1, 5):
             tip_id = self.tipIds[id]
-            tip_y = self.lmList[tip_id][2]
-            pip_y = self.lmList[tip_id - 2][2]
-            mcp_y = self.lmList[tip_id - 3][2]
+            pip_id = tip_id - 2
+            mcp_id = tip_id - 3
 
-            joint_len = abs(mcp_y - pip_y)
-            # Threshold margin prevents jitter when middle finger is loosely held
-            margin = max(10, int(joint_len * 0.22))
+            tip = self.lmList[tip_id]
+            pip = self.lmList[pip_id]
+            mcp = self.lmList[mcp_id]
 
-            if tip_y < (pip_y - margin):
+            # 1. Vertical test (hand pointing up)
+            vert_up = tip[2] < (pip[2] - 8)
+
+            # 2. Distance from wrist (invariant to hand rotation / angle / low shoulder level)
+            dist_tip = math.hypot(tip[1] - wx, tip[2] - wy)
+            dist_pip = math.hypot(pip[1] - wx, pip[2] - wy)
+            dist_mcp = math.hypot(mcp[1] - wx, mcp[2] - wy)
+            dist_up = (dist_tip > dist_pip * 1.08) and (dist_tip > dist_mcp * 1.18)
+
+            if vert_up or dist_up:
                 fingers.append(1)
             else:
                 fingers.append(0)
