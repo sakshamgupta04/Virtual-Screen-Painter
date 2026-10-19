@@ -1,0 +1,22 @@
+# Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.venv/
+venv/
+env/
+
+# Generated Media
+recordings/
+snapshots/
+
+# Large Model Files (auto-downloaded dynamically)
+hand_landmarker.task
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
