@@ -80,6 +80,7 @@ class HandDetector:
         if not self.lmList or len(self.lmList) < 21:
             return [0, 0, 0, 0, 0]
 
+        fingers = []
         wrist = self.lmList[0]
         wx, wy = wrist[1], wrist[2]
         import math
